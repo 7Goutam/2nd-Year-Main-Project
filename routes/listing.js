@@ -6,17 +6,20 @@ const {isLoggedIn, isOwner, validateListing} = require("../middleware.js");
 const multer = require("multer");
 const {storage} = require("../cloudconfig.js")
 const upload = multer({storage })
+const listingController = require("../cantrollers/listing.js");
+const {route} = require("./user.js");
 
 
 const ListingController = require("../cantrollers/listing.js")
-
+router.get("/filter/:id",wrapAsync(listingController.filter));
+router.get("/search", wrapAsync(listingController.search));
 
   // New Route
  
 
 router.route("/")
 .get( wrapAsync(ListingController.index))
-.post(isLoggedIn,
+.post(isLoggedIn, validateListing,
   
   upload.single('listing[image]'),
   validateListing,

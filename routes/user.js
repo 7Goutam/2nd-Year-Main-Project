@@ -6,6 +6,11 @@ const passport = require("passport");
 const { saveRedirectUrl } = require("../middleware.js");
 const userCantroller = require("../cantrollers/user.js")
 
+router
+.route('/')
+.get((req,res)=>{
+  res.redirect('/listings')
+})
 router.route("/signup")
 .get( userCantroller.renderSignupForm)
 .post( wrapAsync(userCantroller.signup));

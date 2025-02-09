@@ -1,11 +1,14 @@
 const Listing = require ("../models/listing.js");
+const mbxGeocoding = require('@mapbox/mapbox-sdk/services/geocoding');
+const mapToken = process.env.MAP_TOKEN;
+const geocodingClient = mbxGeocoding ({ accessToken: mapToken});
 
 module.exports.index = async (req, res) => {
         const allListings = await Listing.find({});
         res.render("listings/index.ejs", { allListings });
       }
 
-module.exports.renderNew =  (req, res) => {
+ module.exports.renderNew =  (req, res) => {
     res.render("listings/new.ejs");
   }
 
@@ -26,12 +29,20 @@ module.exports.showListing = async (req, res) => {
   }
 
 module.exports.createListing = async (req, res, next) => {
+let response =  await geocodingClient.forwardGeocode({
+  query: req.body.listing.location,
+    limit: 1,
+})
+  .send()
     let url =  req.file.path;
     let filename = req.file.filename;
     const newListing = new Listing(req.body.listing);
     newListing.owner = req.user._id;
     newListing.image = {url, filename};
-    await newListing.save();
+    newListing.geometry =  response.body.features[0].geometry;
+
+     let savedListings = await newListing.save();
+     console.log(savedListings);
     req.flash("success", "New Listing Created")
     res.redirect("/listings");
 }
@@ -68,3 +79,24 @@ module.exports.destroyListing = async (req, res) => {
     req.flash("success", "Listing Deleted!")
     res.redirect("/listings");
   }
+
+  module.exports.filter = async(req,res,next)=>{
+    let {id} = req.params;
+    let allListings = await Listing.find({category: id});
+    if(allListings.length != 0){
+        res.render("listings/index.ejs", { allListings });
+    }else{
+        req.flash("error",`No listing with ${id}`);
+        res.redirect("/listings")
+    }
+}
+
+module.exports.search = async (req, res) => {
+  // let { location } = req.query;
+  console.log("Searching...");
+  const { place } =  req.query
+  console.log(req.query);
+  const allListings = await Listing.find({country:place });
+  console.log(allListings);
+  res.render("./listings/index.ejs", { allListings });
+};
